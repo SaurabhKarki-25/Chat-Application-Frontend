@@ -18,7 +18,7 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await api.post("https://chat-application-backend-0x84.onrender.com/auth/login", { email, password });
+     const res = await api.post("https://chat-application-backend-0x84.onrender.com/api/auth/login", { email, password });
 
       // ✅ Expect backend to return both token and user object
       const { token, user } = res.data;

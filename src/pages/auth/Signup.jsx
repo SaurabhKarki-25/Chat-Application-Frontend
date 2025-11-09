@@ -6,29 +6,36 @@ import api from "../../Services/api";
 
 export default function Signup() {
   const [form, setForm] = useState({
-  name: "",
-  email: "",
-  password: "",
-  confirmPassword: "",
-  username: "",
-});
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    username: "",
+  });
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const { name, email, password, username } = form; // ✅ Extract only valid fields
-    await api.post("https://chat-application-backend-0x84.onrender.com/auth/register", { name, email, password, username }); // ✅ Exact names
-    navigate("https://chat-application-backend-0x84.onrender.com/login");
-  } catch (err) {
-    setError("Something went wrong. Try again.");
-    console.error(err);
-  }
-};
-
+    e.preventDefault();
+    try {
+      const { name, email, password, username } = form; // ✅ Extract only valid fields
+      await api.post(
+        "https://chat-application-backend-0x84.onrender.com/api/auth/register",
+        {
+          name,
+          email,
+          password,
+          username,
+        }
+      ); // ✅ Exact names
+      navigate("https://chat-application-backend-0x84.onrender.com/login");
+    } catch (err) {
+      setError("Something went wrong. Try again.");
+      console.error(err);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4">
@@ -59,15 +66,14 @@ export default function Signup() {
             />
 
             <input
-            type="text"
-            placeholder="Username (unique ID)"
-            className="w-full border p-2 mb-3 rounded"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            required
-          />
+              type="text"
+              placeholder="Username (unique ID)"
+              className="w-full border p-2 mb-3 rounded"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              required
+            />
           </div>
-          
 
           {/* Email */}
           <div>
@@ -144,7 +150,11 @@ export default function Signup() {
         <div className="text-center mt-6 text-gray-300">
           Already have an account?{" "}
           <button
-            onClick={() => navigate("https://chat-application-backend-0x84.onrender.com/login")}
+            onClick={() =>
+              navigate(
+                "https://chat-application-backend-0x84.onrender.com/login"
+              )
+            }
             className="text-yellow-400 font-semibold hover:underline transition"
           >
             Log in
