@@ -246,7 +246,7 @@ export default function Dashboard() {
             className="cursor-pointer hover:text-yellow-400 transition"
             onClick={() =>
               navigate(
-                "https://chat-application-backend-0x84.onrender.com/dashboard/chat"
+                "/dashboard/chat"
               )
             }
           />
