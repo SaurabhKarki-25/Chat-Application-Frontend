@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api", // change this if your backend URL is different
+  baseURL: "https://chat-application-backend-0x84.onrender.com", // change this if your backend URL is different
 });
 
 api.interceptors.request.use((config) => {
