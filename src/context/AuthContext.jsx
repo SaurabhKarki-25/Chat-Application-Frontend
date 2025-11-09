@@ -13,13 +13,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    // No token = not logged in
     if (!token) {
       setLoading(false);
       return;
     }
 
-    // Verify the token with backend
     const verifyUser = async () => {
       try {
         const res = await api.get("/users/me");
@@ -42,7 +40,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
-    setLoading(false); // ✅ FIX: ensures ProtectedRoute exits spinner
+    setLoading(false); // ✅ critical for ProtectedRoute
   };
 
   const logout = () => {

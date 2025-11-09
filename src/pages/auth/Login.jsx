@@ -34,8 +34,7 @@ export default function Login() {
       }
 
       login(user, token);
-      setLoading(false); // ✅ Ensure loading stops before navigation
-      navigate("/dashboard"); // ✅ Redirect after successful login
+      setTimeout(() => navigate("/dashboard"), 100); // ✅ ensures re-render
     } catch (err) {
       console.error("❌ Login failed:", err.response?.data || err.message);
       setError(
