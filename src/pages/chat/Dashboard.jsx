@@ -21,7 +21,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user?._id) return;
 
-    const socket = io("http://localhost:5000", {
+    const socket = io("https://chat-application-backend-0x84.onrender.com", {
       transports: ["websocket"],
       reconnection: true,
     });
@@ -42,8 +42,12 @@ export default function Dashboard() {
     try {
       setLoading(true);
       const [usersRes, pendingRes] = await Promise.all([
-        api.get("https://chat-application-backend-0x84.onrender.com/friends/all"),
-        api.get("https://chat-application-backend-0x84.onrender.com/friends/pending"),
+        api.get(
+          "https://chat-application-backend-0x84.onrender.com/api/friends/all"
+        ),
+        api.get(
+          "https://chat-application-backend-0x84.onrender.com/api/friends/pending"
+        ),
       ]);
 
       const users = (usersRes.data || []).filter(
@@ -65,52 +69,50 @@ export default function Dashboard() {
   }, [user]);
 
   // ✅ Send friend request
-  const handleAddFriend = async (id, username) => {
-    try {
-      await api.post(`https://chat-application-backend-0x84.onrender.com/friends/request/${id}`);
-      alert(`✅ Friend request sent to @${username}`);
+ const handleAddFriend = async (id, username) => {
+  try {
+    await api.post(`https://chat-application-backend-0x84.onrender.com/api/friends/request/${id}`);
+    alert(`✅ Friend request sent to @${username}`);
 
-      // Update dashboard data instantly
-      fetchDashboardData();
+    fetchDashboardData(); // refresh UI
 
-      // Notify recipient in real-time
-      if (socketRef.current) {
-        socketRef.current.emit("friendRequestSent", { senderId: user._id, receiverId: id });
-      }
-    } catch (err) {
-      console.error("❌ Error sending request:", err);
-      alert("⚠️ Request already sent or failed.");
+    if (socketRef.current) {
+      socketRef.current.emit("friendRequestSent", {
+        senderId: user._id,
+        receiverId: id,
+      });
     }
-  };
+  } catch (err) {
+    console.error("❌ Error sending request:", err);
+    alert("⚠️ Request already sent or failed.");
+  }
+};
 
-  // ✅ Accept friend request
   const handleAcceptRequest = async (requestId, fromUsername) => {
-    try {
-      await api.put(`https://chat-application-backend-0x84.onrender.com/friends/accept/${requestId}`);
-      alert(`🎉 You are now friends with @${fromUsername}`);
-      setFriendRequests((prev) => prev.filter((r) => r._id !== requestId));
+  try {
+    await api.put(`https://chat-application-backend-0x84.onrender.com/api/friends/accept/${requestId}`);
+    alert(`🎉 You are now friends with @${fromUsername}`);
+    setFriendRequests((prev) => prev.filter((r) => r._id !== requestId));
 
-      // Trigger friend list refresh on ChatPage
-      window.dispatchEvent(new Event("friendListUpdated"));
-      fetchDashboardData();
+    window.dispatchEvent(new Event("friendListUpdated"));
+    fetchDashboardData();
 
-      // Notify other user (real-time)
-      if (socketRef.current) {
-        socketRef.current.emit("friendAccepted", {
-          recipient: user._id,
-          requesterUsername: fromUsername,
-        });
-      }
-    } catch (err) {
-      console.error("❌ Error accepting request:", err);
+    if (socketRef.current) {
+      socketRef.current.emit("friendAccepted", {
+        recipient: user._id,
+        requesterUsername: fromUsername,
+      });
     }
-  };
+  } catch (err) {
+    console.error("❌ Error accepting request:", err);
+  }
+};
 
   // ✅ Logout user
   const handleLogout = () => {
-    logout();
-    navigate("https://chat-application-backend-0x84.onrender.com/login");
-  };
+  logout(); // clear auth context or localStorage
+  navigate("/login"); // or use full frontend URL if needed
+};
 
   // ✅ Close dropdowns on outside click
   useEffect(() => {
@@ -242,7 +244,11 @@ export default function Dashboard() {
           <MessageCircle
             size={24}
             className="cursor-pointer hover:text-yellow-400 transition"
-            onClick={() => navigate("https://chat-application-backend-0x84.onrender.com/dashboard/chat")}
+            onClick={() =>
+              navigate(
+                "https://chat-application-backend-0x84.onrender.com/dashboard/chat"
+              )
+            }
           />
 
           {/* 👤 Profile Menu */}
