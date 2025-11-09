@@ -18,7 +18,7 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const res = await api.post("https://chat-application-backend-0x84.onrender.com/auth/login", { email, password });
 
       // ✅ Expect backend to return both token and user object
       const { token, user } = res.data;
@@ -33,7 +33,7 @@ export default function Login() {
       login(user, token);
 
       // ✅ Navigate to dashboard
-      navigate("/dashboard");
+      navigate("https://chat-application-backend-0x84.onrender.com/dashboard");
     } catch (err) {
       console.error("❌ Login failed:", err.response?.data || err.message);
       setError(

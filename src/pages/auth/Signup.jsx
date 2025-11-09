@@ -21,8 +21,8 @@ export default function Signup() {
   e.preventDefault();
   try {
     const { name, email, password, username } = form; // ✅ Extract only valid fields
-    await api.post("/auth/register", { name, email, password, username }); // ✅ Exact names
-    navigate("/login");
+    await api.post("https://chat-application-backend-0x84.onrender.com/auth/register", { name, email, password, username }); // ✅ Exact names
+    navigate("https://chat-application-backend-0x84.onrender.com/login");
   } catch (err) {
     setError("Something went wrong. Try again.");
     console.error(err);
@@ -144,7 +144,7 @@ export default function Signup() {
         <div className="text-center mt-6 text-gray-300">
           Already have an account?{" "}
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("https://chat-application-backend-0x84.onrender.com/login")}
             className="text-yellow-400 font-semibold hover:underline transition"
           >
             Log in
