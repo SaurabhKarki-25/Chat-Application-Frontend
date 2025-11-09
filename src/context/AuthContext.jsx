@@ -42,6 +42,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
+    setLoading(false); // ✅ FIX: ensures ProtectedRoute exits spinner
   };
 
   const logout = () => {
@@ -56,4 +57,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
