@@ -60,7 +60,7 @@ export default function ChatPage() {
     if (!user?._id) return;
     try {
       setLoading(true);
-      const res = await api.get("https://chat-application-backend-0x84.onrender.com/friends/list");
+      const res = await api.get("https://chat-application-backend-0x84.onrender.com/api/friends/list");
       const accepted = (res.data || []).filter((f) => f._id !== user._id);
       setFriends(accepted);
     } catch (err) {
