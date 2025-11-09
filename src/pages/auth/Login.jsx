@@ -29,19 +29,19 @@ export default function Login() {
       if (!token || !user) {
         setError("Invalid response from server. Please try again.");
         console.error("Invalid backend response:", res.data);
-        setLoading(false); // ✅ Ensure loading stops
+        setLoading(false);
         return;
       }
 
       login(user, token);
-      navigate("/dashboard");
+      setLoading(false); // ✅ Ensure loading stops before navigation
+      navigate("/dashboard"); // ✅ Redirect after successful login
     } catch (err) {
       console.error("❌ Login failed:", err.response?.data || err.message);
       setError(
         err.response?.data?.message ||
           "Invalid email or password. Please try again."
       );
-    } finally {
       setLoading(false);
     }
   };
