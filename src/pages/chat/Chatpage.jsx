@@ -19,7 +19,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!user?._id) return;
 
-    const socket = io("http://localhost:5000", {
+    const socket = io("https://chat-application-backend-0x84.onrender.com", {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -60,7 +60,7 @@ export default function ChatPage() {
     if (!user?._id) return;
     try {
       setLoading(true);
-      const res = await api.get("/friends/list");
+      const res = await api.get("https://chat-application-backend-0x84.onrender.com/friends/list");
       const accepted = (res.data || []).filter((f) => f._id !== user._id);
       setFriends(accepted);
     } catch (err) {
