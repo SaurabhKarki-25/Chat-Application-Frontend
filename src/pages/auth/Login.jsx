@@ -33,7 +33,7 @@ export default function Login() {
       login(user, token);
 
       // ✅ Navigate to dashboard
-      navigate("https://chat-application-backend-0x84.onrender.com/dashboard");
+      navigate("/dashboard");
     } catch (err) {
       console.error("❌ Login failed:", err.response?.data || err.message);
       setError(
