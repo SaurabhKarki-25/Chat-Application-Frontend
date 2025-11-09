@@ -42,8 +42,8 @@ export default function Dashboard() {
     try {
       setLoading(true);
       const [usersRes, pendingRes] = await Promise.all([
-        api.get("/friends/all"),
-        api.get("/friends/pending"),
+        api.get("https://chat-application-backend-0x84.onrender.com/friends/all"),
+        api.get("https://chat-application-backend-0x84.onrender.com/friends/pending"),
       ]);
 
       const users = (usersRes.data || []).filter(
@@ -67,7 +67,7 @@ export default function Dashboard() {
   // ✅ Send friend request
   const handleAddFriend = async (id, username) => {
     try {
-      await api.post(`/friends/request/${id}`);
+      await api.post(`https://chat-application-backend-0x84.onrender.com/friends/request/${id}`);
       alert(`✅ Friend request sent to @${username}`);
 
       // Update dashboard data instantly
@@ -86,7 +86,7 @@ export default function Dashboard() {
   // ✅ Accept friend request
   const handleAcceptRequest = async (requestId, fromUsername) => {
     try {
-      await api.put(`/friends/accept/${requestId}`);
+      await api.put(`https://chat-application-backend-0x84.onrender.com/friends/accept/${requestId}`);
       alert(`🎉 You are now friends with @${fromUsername}`);
       setFriendRequests((prev) => prev.filter((r) => r._id !== requestId));
 
@@ -109,7 +109,7 @@ export default function Dashboard() {
   // ✅ Logout user
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("https://chat-application-backend-0x84.onrender.com/login");
   };
 
   // ✅ Close dropdowns on outside click
@@ -242,7 +242,7 @@ export default function Dashboard() {
           <MessageCircle
             size={24}
             className="cursor-pointer hover:text-yellow-400 transition"
-            onClick={() => navigate("/dashboard/chat")}
+            onClick={() => navigate("https://chat-application-backend-0x84.onrender.com/dashboard/chat")}
           />
 
           {/* 👤 Profile Menu */}

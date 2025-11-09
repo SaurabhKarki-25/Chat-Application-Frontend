@@ -15,7 +15,7 @@ export default function ChatPanel({ friend }) {
   useEffect(() => {
     if (!user?._id || !friend?._id) return;
 
-    const socket = io("http://localhost:5000", {
+    const socket = io("https://chat-application-backend-0x84.onrender.com", {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -50,7 +50,7 @@ export default function ChatPanel({ friend }) {
   useEffect(() => {
     const loadMessages = async () => {
       try {
-        const res = await api.get(`/chats/${friend.username}`);
+        const res = await api.get(`https://chat-application-backend-0x84.onrender.com/chats/${friend.username}`);
         const chatMsgs =
           res.data?.messages?.map((m) => ({
             senderId:
@@ -95,7 +95,7 @@ export default function ChatPanel({ friend }) {
       socketRef.current.emit("sendMessage", msgObj);
 
       // Persist in DB
-      await api.post(`/chats/${friend.username}`, { text: msgObj.message });
+      await api.post(`https://chat-application-backend-0x84.onrender.com/chats/${friend.username}`, { text: msgObj.message });
     } catch (err) {
       console.error("❌ Error sending message:", err);
     }
