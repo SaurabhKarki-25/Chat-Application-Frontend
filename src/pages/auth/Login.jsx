@@ -5,13 +5,12 @@ import api from "../../Services/api.js";
 import { AuthContext } from "../../context/AuthContext.jsx";
 
 export default function Login() {
-  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext); // ✅ Context for user auth state
+  const { login } = useContext(AuthContext);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -19,21 +18,22 @@ export default function Login() {
     setError("");
 
     try {
-     const res = await api.post("https://chat-application-backend-0x84.onrender.com/api/auth/login", { email, password });
+      const res = await api.post(
+        "https://chat-application-backend-0x84.onrender.com/api/auth/login",
+        { email, password }
+      );
 
-      // ✅ Expect backend to return both token and user object
       const { token, user } = res.data;
+      console.log("Login response:", res.data);
 
       if (!token || !user) {
         setError("Invalid response from server. Please try again.");
         console.error("Invalid backend response:", res.data);
+        setLoading(false); // ✅ Ensure loading stops
         return;
       }
 
-      // ✅ Store token + user, update global context
       login(user, token);
-
-      // ✅ Navigate to dashboard
       navigate("/dashboard");
     } catch (err) {
       console.error("❌ Login failed:", err.response?.data || err.message);
@@ -101,7 +101,11 @@ export default function Login() {
             whileTap={{ scale: 0.95 }}
             type="submit"
             disabled={loading}
-            className="w-full py-3 mt-2 rounded-lg bg-yellow-400 text-black font-bold shadow-md hover:bg-yellow-300 transition"
+            className={`w-full py-3 mt-2 rounded-lg font-bold shadow-md transition ${
+              loading
+                ? "bg-yellow-300 cursor-not-allowed"
+                : "bg-yellow-400 hover:bg-yellow-300 text-black"
+            }`}
           >
             {loading ? (
               <div className="flex justify-center items-center space-x-2">
