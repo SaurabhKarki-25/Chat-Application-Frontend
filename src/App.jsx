@@ -35,7 +35,8 @@ function App() {
 
         
 
-        
+        {/* Default route */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );
