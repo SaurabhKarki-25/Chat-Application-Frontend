@@ -16,18 +16,18 @@ function App() {
         <Route
           path="/dashboard"
           element={
-           
+            <ProtectedRoute>
               <Dashboard />
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/dashboard/chat"
           element={
-          
+            <ProtectedRoute>
               <Chatbox />
-            
+            </ProtectedRoute>
           }
         />
 
@@ -35,8 +35,7 @@ function App() {
 
         
 
-        {/* Default route */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        
       </Routes>
     </Router>
   );
