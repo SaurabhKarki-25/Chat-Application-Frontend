@@ -8,6 +8,7 @@ export default function VoiceRecorder({ onSend, disabled }) {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const timerRef = useRef(null);
+  const streamRef = useRef(null);
 
   /* ⏱ TIMER */
   useEffect(() => {
@@ -23,14 +24,20 @@ export default function VoiceRecorder({ onSend, disabled }) {
     return () => clearInterval(timerRef.current);
   }, [recording]);
 
-  /* 🎙 START RECORD */
+  /* 🎙 START */
   const startRecording = async () => {
     if (disabled) return;
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream =
+        await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const mediaRecorder = new MediaRecorder(stream);
+      streamRef.current = stream;
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm",
+      });
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -41,25 +48,32 @@ export default function VoiceRecorder({ onSend, disabled }) {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
+        const blob = new Blob(audioChunksRef.current, {
           type: "audio/webm",
         });
 
-        onSend(audioBlob);
+        if (blob.size > 0) {
+          onSend(blob);
+        }
 
-        // cleanup
-        stream.getTracks().forEach((t) => t.stop());
         audioChunksRef.current = [];
+
+        // stop mic
+        streamRef.current
+          ?.getTracks()
+          .forEach((t) => t.stop());
       };
 
       mediaRecorder.start();
       setRecording(true);
+
     } catch (err) {
-      console.error("Mic access denied:", err);
+      console.error("Mic error:", err);
+      alert("Microphone permission required");
     }
   };
 
-  /* ⏹ STOP RECORD */
+  /* ⏹ STOP */
   const stopRecording = () => {
     if (!mediaRecorderRef.current) return;
 
@@ -67,7 +81,13 @@ export default function VoiceRecorder({ onSend, disabled }) {
     setRecording(false);
   };
 
-  /* ⏱ FORMAT TIME */
+  /* 🔁 TOGGLE */
+  const toggleRecording = () => {
+    if (recording) stopRecording();
+    else startRecording();
+  };
+
+  /* ⏱ FORMAT */
   const formatTime = (s) => {
     const m = String(Math.floor(s / 60)).padStart(2, "0");
     const sec = String(s % 60).padStart(2, "0");
@@ -77,17 +97,22 @@ export default function VoiceRecorder({ onSend, disabled }) {
   return (
     <button
       type="button"
-      onMouseDown={startRecording}
-      onMouseUp={stopRecording}
-      onTouchStart={startRecording}
-      onTouchEnd={stopRecording}
+      onClick={toggleRecording}
       disabled={disabled}
-      className={`flex items-center gap-2 px-3 py-2 rounded-full
-        ${recording ? "bg-red-500 text-white" : "bg-white/20 text-white"}
+      className={`
+        flex items-center gap-2 px-4 py-2 rounded-full transition
+        ${recording
+          ? "bg-red-500 text-white animate-pulse"
+          : "bg-white/20 text-white"}
       `}
     >
       {recording ? <Square size={18} /> : <Mic size={18} />}
-      {recording && <span className="text-sm">{formatTime(seconds)}</span>}
+
+      {recording && (
+        <span className="text-sm font-mono">
+          {formatTime(seconds)}
+        </span>
+      )}
     </button>
   );
 }
