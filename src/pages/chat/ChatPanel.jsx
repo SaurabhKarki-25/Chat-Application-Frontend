@@ -4,14 +4,13 @@ import api from "../../Services/api";
 import dayjs from "dayjs";
 import EmojiPicker from "emoji-picker-react";
 import Linkify from "linkify-react";
-import { Smile } from "lucide-react";
+import { Smile, Paperclip, Send } from "lucide-react";
 import AudioMessage from "../../components/AudioMessage";
 import VoiceRecorder from "../../components/VoiceRecorder";
 
 const linkifyOptions = {
   target: "_blank",
-  rel: "noopener noreferrer",
-  className: "text-blue-600 underline break-all",
+  className: "text-blue-600 underline",
 };
 
 export default function ChatPanel({ friend, socket }) {
@@ -23,17 +22,16 @@ export default function ChatPanel({ friend, socket }) {
   const [uploading, setUploading] = useState(false);
 
   const endRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  const isAI = friend?.isAI === true;
-
-  /* ========= SCROLL ========= */
+  /* ========= AUTO SCROLL ========= */
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   /* ========= LOAD CHAT ========= */
   useEffect(() => {
-    if (!friend || isAI) return;
+    if (!friend) return;
 
     (async () => {
       const res = await api.get(`/api/chats/${friend.username}`);
@@ -45,14 +43,13 @@ export default function ChatPanel({ friend, socket }) {
   useEffect(() => {
     if (!socket) return;
 
-    const onReceive = (msg) => {
+    socket.on("receiveMessage", (msg) => {
       if (msg.senderId === friend._id) {
         setMessages((p) => [...p, msg]);
       }
-    };
+    });
 
-    socket.on("receiveMessage", onReceive);
-    return () => socket.off("receiveMessage", onReceive);
+    return () => socket.off("receiveMessage");
   }, [socket, friend?._id]);
 
   /* ========= SEND TEXT ========= */
@@ -60,110 +57,133 @@ export default function ChatPanel({ friend, socket }) {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    const text = newMessage.trim();
-    setNewMessage("");
-
-    const myMsg = {
+    const msg = {
       senderId: user._id,
       senderName: user.username,
-      text,
+      text: newMessage,
       type: "text",
       timestamp: new Date(),
     };
 
-    setMessages((p) => [...p, myMsg]);
+    setMessages((p) => [...p, msg]);
+    setNewMessage("");
 
     socket.emit("sendMessage", {
-      senderId: user._id,
-      senderName: user.username,
+      ...msg,
       receiverId: friend._id,
-      text,
     });
 
-    await api.post(`/api/chats/${friend.username}`, { text });
+    await api.post(`/api/chats/${friend.username}`, { text: msg.text });
   };
 
-  /* ========= SEND VOICE ========= */
-  const sendVoiceMessage = async (audioBlob) => {
-    try {
-      setUploading(true);
+  /* ========= FILE SEND ========= */
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-      const file = new File(
-        [audioBlob],
-        `voice-${Date.now()}.webm`,
-        { type: "audio/webm" }
-      );
+    setUploading(true);
 
-      const formData = new FormData();
-      formData.append("file", file);
+    const form = new FormData();
+    form.append("file", file);
 
-      const res = await api.post("/api/upload", formData);
+    const res = await api.post("/api/upload", form);
 
-      if (!res.data?.url) return;
+    const type = file.type.startsWith("image")
+      ? "image"
+      : file.type.startsWith("video")
+      ? "video"
+      : file.type.startsWith("audio")
+      ? "audio"
+      : "file";
 
-      const msg = {
-        senderId: user._id,
-        senderName: user.username,
-        type: "audio",
-        fileUrl: res.data.url,
-        timestamp: new Date(),
-      };
+    const msg = {
+      senderId: user._id,
+      senderName: user.username,
+      type,
+      fileUrl: res.data.url,
+      fileName: file.name,
+      timestamp: new Date(),
+    };
 
-      setMessages((p) => [...p, msg]);
+    setMessages((p) => [...p, msg]);
 
-      socket.emit("sendMessage", {
-        ...msg,
-        receiverId: friend._id,
-      });
+    socket.emit("sendMessage", {
+      ...msg,
+      receiverId: friend._id,
+    });
 
-      await api.post(`/api/chats/${friend.username}`, msg);
+    await api.post(`/api/chats/${friend.username}`, msg);
 
-    } finally {
-      setUploading(false);
-    }
+    setUploading(false);
   };
 
-  /* ========= UI ========= */
+  /* ========= VOICE ========= */
+  const sendVoice = async (blob) => {
+    const file = new File([blob], "voice.webm", { type: "audio/webm" });
+
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await api.post("/api/upload", form);
+
+    const msg = {
+      senderId: user._id,
+      type: "audio",
+      fileUrl: res.data.url,
+      timestamp: new Date(),
+    };
+
+    setMessages((p) => [...p, msg]);
+
+    socket.emit("sendMessage", {
+      ...msg,
+      receiverId: friend._id,
+    });
+
+    await api.post(`/api/chats/${friend.username}`, msg);
+  };
+
   return (
-    <div className="flex flex-col h-full bg-[#efeae2]">
+    <div className="flex flex-col h-full bg-[#e5ddd5]">
 
       {/* HEADER */}
       <div className="bg-[#075e54] text-white p-4 font-semibold shadow">
         @{friend.username}
       </div>
 
-      {/* CHAT AREA */}
-      <div
-        className="flex-1 overflow-y-auto p-4 space-y-3"
-        style={{
-          backgroundImage:
-            "url('https://i.imgur.com/2nCt3Sbl.png')",
-        }}
-      >
+      {/* CHAT BODY */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#efeae2]">
+
         {messages.map((m, i) => {
           const mine = m.senderId === user._id;
 
           return (
             <div key={i} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
-                className={`
-                  max-w-[70%] px-4 py-2 rounded-lg shadow text-sm
-                  ${mine
-                    ? "bg-[#dcf8c6] text-black"
-                    : "bg-white text-black"}
-                `}
+                className={`max-w-[75%] px-3 py-2 rounded-lg text-sm shadow
+                  ${mine ? "bg-[#dcf8c6]" : "bg-white"}`}
               >
                 {m.text && (
-                  <Linkify options={linkifyOptions}>
-                    {m.text}
-                  </Linkify>
+                  <Linkify options={linkifyOptions}>{m.text}</Linkify>
                 )}
 
-                {m.type === "audio" && (
-                  <AudioMessage src={m.fileUrl} />
+                {m.type === "image" && (
+                  <img src={m.fileUrl} className="rounded-lg max-h-60 mt-2" />
                 )}
 
-                <p className="text-[10px] text-gray-500 text-right mt-1">
+                {m.type === "video" && (
+                  <video controls src={m.fileUrl} className="rounded-lg mt-2" />
+                )}
+
+                {m.type === "audio" && <AudioMessage src={m.fileUrl} />}
+
+                {m.type === "file" && (
+                  <a href={m.fileUrl} target="_blank" className="underline">
+                    📄 {m.fileName}
+                  </a>
+                )}
+
+                <p className="text-[10px] text-gray-500 text-right">
                   {dayjs(m.timestamp).format("hh:mm A")}
                 </p>
               </div>
@@ -174,25 +194,18 @@ export default function ChatPanel({ friend, socket }) {
         <div ref={endRef} />
       </div>
 
-      {/* INPUT */}
+      {/* INPUT BAR */}
       <form
         onSubmit={send}
-        className="bg-[#f0f0f0] p-2 flex items-center gap-2"
+        className="bg-white p-2 flex items-center gap-2 sticky bottom-0"
       >
-        <button
-          type="button"
-          onClick={() => setShowEmoji(!showEmoji)}
-        >
+        <button type="button" onClick={() => setShowEmoji(!showEmoji)}>
           <Smile />
         </button>
 
         {showEmoji && (
           <div className="absolute bottom-20">
-            <EmojiPicker
-              onEmojiClick={(e) =>
-                setNewMessage((p) => p + e.emoji)
-              }
-            />
+            <EmojiPicker onEmojiClick={(e) => setNewMessage(p => p + e.emoji)} />
           </div>
         )}
 
@@ -200,19 +213,26 @@ export default function ChatPanel({ friend, socket }) {
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Message"
-          className="flex-1 px-4 py-2 rounded-full border outline-none"
+          className="flex-1 border rounded-full px-4 py-2"
         />
 
-        <VoiceRecorder
-          onSend={sendVoiceMessage}
-          disabled={uploading}
+        {/* FILE BUTTON */}
+        <button type="button" onClick={() => fileInputRef.current.click()}>
+          <Paperclip />
+        </button>
+
+        <input
+          ref={fileInputRef}
+          hidden
+          type="file"
+          onChange={handleFile}
         />
 
-        <button
-          type="submit"
-          className="bg-[#075e54] text-white px-4 py-2 rounded-full"
-        >
-          Send
+        {/* VOICE */}
+        <VoiceRecorder onSend={sendVoice} />
+
+        <button className="bg-[#075e54] text-white p-2 rounded-full">
+          <Send size={18} />
         </button>
       </form>
     </div>
