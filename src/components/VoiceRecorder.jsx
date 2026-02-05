@@ -95,24 +95,27 @@ export default function VoiceRecorder({ onSend, disabled }) {
   };
 
   return (
-    <button
-      type="button"
-      onClick={toggleRecording}
-      disabled={disabled}
-      className={`
-        flex items-center gap-2 px-4 py-2 rounded-full transition
-        ${recording
-          ? "bg-red-500 text-white animate-pulse"
-          : "bg-white/20 text-white"}
-      `}
-    >
-      {recording ? <Square size={18} /> : <Mic size={18} />}
+  
+  <button
+    type="button"
+    onClick={toggleRecording}
+    disabled={disabled}
+    className={`
+      w-11 h-11 flex items-center justify-center
+      rounded-full shadow-md transition
+      ${
+        recording
+          ? "bg-red-500 animate-pulse"
+          : "bg-[#25D366] hover:scale-105"
+      }
+    `}
+  >
+    {recording ? (
+      <Square size={20} color="white" />
+    ) : (
+      <Mic size={20} color="white" />
+    )}
+  </button>
 
-      {recording && (
-        <span className="text-sm font-mono">
-          {formatTime(seconds)}
-        </span>
-      )}
-    </button>
   );
 }
