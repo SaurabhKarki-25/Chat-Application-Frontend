@@ -1,16 +1,27 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import api from "../../Services/api.js";
 import { AuthContext } from "../../context/AuthContext.jsx";
 
 export default function Login() {
+
+  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
+  const { login, user } = useContext(AuthContext);
+
+  /* 🔒 BLOCK LOGIN PAGE IF USER IS ALREADY AUTHENTICATED */
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -18,25 +29,25 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await api.post(
-        "https://chat-application-backend-0x84.onrender.com/api/auth/login",
-        { email, password }
-      );
+      const res = await api.post("/api/auth/login", {
+        email,
+        password,
+      });
 
       const { token, user } = res.data;
-      console.log("Login response:", res.data);
 
       if (!token || !user) {
         setError("Invalid response from server. Please try again.");
-        console.error("Invalid backend response:", res.data);
         setLoading(false);
         return;
       }
 
+      // ✅ Save auth
       login(user, token);
-      setTimeout(() => navigate("/dashboard"), 100); // ✅ ensures re-render
+
+      // ✅ REMOVE LOGIN FROM HISTORY (CRITICAL)
+      navigate("/dashboard", { replace: true });
     } catch (err) {
-      console.error("❌ Login failed:", err.response?.data || err.message);
       setError(
         err.response?.data?.message ||
           "Invalid email or password. Please try again."
@@ -50,12 +61,13 @@ export default function Login() {
       <motion.div
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
+        transition={{ duration: 0.6 }}
         className="bg-white/10 backdrop-blur-lg border border-white/20 shadow-2xl rounded-2xl p-8 w-full max-w-md"
       >
         <h2 className="text-4xl font-extrabold text-center text-white mb-6">
           Welcome to <span className="text-yellow-400">ChatVerse</span>
         </h2>
+
         <p className="text-center text-gray-200 mb-8">
           Sign in to continue your conversations 💬
         </p>
@@ -65,11 +77,10 @@ export default function Login() {
             <label className="block text-gray-200 mb-2">Email</label>
             <input
               type="email"
-              placeholder="Enter your email"
-              className="w-full px-4 py-2 rounded-lg bg-white/20 text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-yellow-400 transition"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className="w-full px-4 py-2 rounded-lg bg-white/20 text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-yellow-400"
             />
           </div>
 
@@ -77,60 +88,37 @@ export default function Login() {
             <label className="block text-gray-200 mb-2">Password</label>
             <input
               type="password"
-              placeholder="Enter your password"
-              className="w-full px-4 py-2 rounded-lg bg-white/20 text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-yellow-400 transition"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              className="w-full px-4 py-2 rounded-lg bg-white/20 text-white placeholder-gray-300 outline-none focus:ring-2 focus:ring-yellow-400"
             />
           </div>
 
           {error && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-red-400 text-sm text-center"
-            >
-              {error}
-            </motion.p>
+            <p className="text-red-400 text-sm text-center">{error}</p>
           )}
 
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            type="submit"
             disabled={loading}
-            className={`w-full py-3 mt-2 rounded-lg font-bold shadow-md transition ${
+            type="submit"
+            className={`w-full py-3 rounded-lg font-bold transition ${
               loading
                 ? "bg-yellow-300 cursor-not-allowed"
                 : "bg-yellow-400 hover:bg-yellow-300 text-black"
             }`}
           >
-            {loading ? (
-              <div className="flex justify-center items-center space-x-2">
-                <div className="w-5 h-5 border-2 border-t-transparent border-black rounded-full animate-spin"></div>
-                <span>Logging in...</span>
-              </div>
-            ) : (
-              "Login"
-            )}
+            {loading ? "Logging in..." : "Login"}
           </motion.button>
         </form>
-
-        <div className="text-center mt-5">
-          <button
-            onClick={() => navigate("/forgot-password")}
-            className="text-sm text-gray-200 hover:text-yellow-300 transition"
-          >
-            Forgot password?
-          </button>
-        </div>
 
         <div className="text-center mt-4 text-gray-300">
           Don’t have an account?{" "}
           <button
             onClick={() => navigate("/signup")}
-            className="text-yellow-400 font-semibold hover:underline transition"
+            className="text-yellow-400 font-semibold hover:underline"
           >
             Create one
           </button>
@@ -138,4 +126,4 @@ export default function Login() {
       </motion.div>
     </div>
   );
-}
+} 

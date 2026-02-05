@@ -22,7 +22,7 @@ export default function Signup() {
     try {
       const { name, email, password, username } = form; // ✅ Extract only valid fields
       await api.post(
-        "https://chat-application-backend-0x84.onrender.com/api/auth/register",
+        "http://localhost:5000/api/auth/register",
         {
           name,
           email,
@@ -30,7 +30,7 @@ export default function Signup() {
           username,
         }
       ); // ✅ Exact names
-      navigate("https://chat-application-backend-0x84.onrender.com/login");
+      navigate("/login");
     } catch (err) {
       setError("Something went wrong. Try again.");
       console.error(err);
@@ -152,7 +152,7 @@ export default function Signup() {
           <button
             onClick={() =>
               navigate(
-                "https://chat-application-backend-0x84.onrender.com/login"
+                "/login"
               )
             }
             className="text-yellow-400 font-semibold hover:underline transition"

@@ -4,10 +4,7 @@ import api from "../Services/api";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,16 +17,15 @@ export const AuthProvider = ({ children }) => {
 
     const verifyUser = async () => {
       try {
-        const res = await api.get("/users/me");
+        const res = await api.get("/api/users/me");
         setUser(res.data);
         localStorage.setItem("user", JSON.stringify(res.data));
-      } catch (err) {
-        console.error("Auth verification failed:", err);
+      } catch {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setUser(null);
       } finally {
-        setLoading(false);
+        setLoading(false); // 🔥 ONLY HERE
       }
     };
 
@@ -40,7 +36,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
-    setLoading(false); // ✅ critical for ProtectedRoute
   };
 
   const logout = () => {
@@ -50,7 +45,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

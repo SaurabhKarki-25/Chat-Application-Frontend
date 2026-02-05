@@ -1,199 +1,128 @@
 import { useState, useEffect, useContext, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthContext } from "../../context/AuthContext";
-import { ArrowLeft, MessageCircle, Bell, Circle } from "lucide-react";
+import { ArrowLeft, Bell, Bot } from "lucide-react";
 import { io } from "socket.io-client";
 import api from "../../Services/api";
 import ChatPanel from "./ChatPanel";
 
+/* 🤖 AI USER (frontend only) */
+const AI_USER = {
+  _id: "CHATVERSE_AI",
+  username: "ChatVerse AI",
+  isAI: true,
+};
+
 export default function ChatPage() {
   const { user } = useContext(AuthContext);
+
   const [friends, setFriends] = useState([]);
-  const [selectedFriend, setSelectedFriend] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [unreadMessages, setUnreadMessages] = useState({});
-  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [unread, setUnread] = useState({});
   const socketRef = useRef(null);
 
-  // ✅ Initialize Socket.io Connection
+  /* ================= SOCKET (ONE TIME) ================= */
   useEffect(() => {
     if (!user?._id) return;
 
-    const socket = io("https://chat-application-backend-0x84.onrender.com", {
+    const socket = io("http://localhost:5000", {
       transports: ["websocket"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
     });
 
     socketRef.current = socket;
-
     socket.emit("join", user._id);
 
-    // Friend list real-time sync
-    socket.on("friendListUpdated", () => fetchAcceptedFriends());
-    socket.on("friendRequestAccepted", () => fetchAcceptedFriends());
-
-    // Online user tracking
-    socket.on("userOnline", ({ userId }) =>
-      setOnlineUsers((prev) => [...new Set([...prev, userId])])
-    );
-
-    socket.on("userOffline", ({ userId }) =>
-      setOnlineUsers((prev) => prev.filter((id) => id !== userId))
-    );
-
-    // Handle incoming messages
-    socket.on("receiveMessage", ({ senderId }) => {
-      if (selectedFriend?._id !== senderId) {
-        setUnreadMessages((prev) => ({ ...prev, [senderId]: true }));
+    socket.on("receiveMessage", (msg) => {
+      if (selectedChat?._id !== msg.senderId) {
+        setUnread((p) => ({ ...p, [msg.senderId]: true }));
       }
     });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [user?._id, selectedFriend]);
+    socket.on("aiReply", () => {
+      if (selectedChat?._id !== AI_USER._id) {
+        setUnread((p) => ({ ...p, [AI_USER._id]: true }));
+      }
+    });
 
-  // ✅ Fetch accepted friends securely
-  const fetchAcceptedFriends = useCallback(async () => {
-    if (!user?._id) return;
-    try {
-      setLoading(true);
-      const res = await api.get("https://chat-application-backend-0x84.onrender.com/api/friends/list");
-      const accepted = (res.data || []).filter((f) => f._id !== user._id);
-      setFriends(accepted);
-    } catch (err) {
-      console.error("⚠️ Error fetching friends:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+    return () => socket.disconnect();
+  }, [user?._id, selectedChat]);
 
-  // ✅ Fetch once + listen for manual updates
+  /* ================= FRIEND LIST ================= */
+  const fetchFriends = useCallback(async () => {
+    const res = await api.get("/api/friends/list");
+    setFriends(res.data || []);
+  }, []);
+
   useEffect(() => {
-    fetchAcceptedFriends();
-    const handler = () => fetchAcceptedFriends();
-    window.addEventListener("friendListUpdated", handler);
-    return () => window.removeEventListener("friendListUpdated", handler);
-  }, [fetchAcceptedFriends]);
+    fetchFriends();
+  }, [fetchFriends]);
 
-  // ✅ Handle friend selection
-  const handleSelectFriend = (friend) => {
-    setSelectedFriend(friend);
-    setUnreadMessages((prev) => ({
-      ...prev,
-      [friend._id]: false,
-    }));
+  const selectChat = (chat) => {
+    setSelectedChat(chat);
+    setUnread((p) => ({ ...p, [chat._id]: false }));
   };
 
-  // ✅ Check online status
-  const isOnline = (id) => onlineUsers.includes(id);
-
   return (
-    <div className="h-screen flex bg-gradient-to-br from-indigo-600 via-purple-700 to-blue-700 text-white overflow-hidden">
-      {/* Sidebar (Friend List) */}
-      <motion.div
-        initial={{ x: 0 }}
-        animate={{ width: selectedFriend ? "30%" : "100%" }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col border-r border-white/10 p-4 overflow-y-auto relative"
-      >
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2">
-            {selectedFriend && (
-              <ArrowLeft
-                className="cursor-pointer hover:text-yellow-400"
-                onClick={() => setSelectedFriend(null)}
-              />
-            )}
-            <h2 className="text-2xl font-bold">Your Chats</h2>
-          </div>
+    <div className="h-screen flex bg-gradient-to-br from-indigo-600 via-purple-700 to-blue-700 text-white">
 
-          {/* Notification Bell */}
-          <div className="relative">
-            <Bell
-              size={22}
-              className={`cursor-pointer hover:text-yellow-400 transition ${
-                Object.values(unreadMessages).some(Boolean)
-                  ? "animate-bounce text-yellow-400"
-                  : ""
-              }`}
-            />
-            {Object.values(unreadMessages).some(Boolean) && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
-            )}
-          </div>
+      {/* SIDEBAR */}
+      <motion.div
+        animate={{ width: selectedChat ? "30%" : "100%" }}
+        className="p-4 border-r border-white/10 overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-4">
+          {selectedChat ? (
+            <ArrowLeft onClick={() => setSelectedChat(null)} />
+          ) : (
+            <span />
+          )}
+          <h2 className="font-bold text-xl">Your Chats</h2>
+          <Bell />
         </div>
 
-        {/* Friends List */}
-        {loading ? (
-          <div className="text-gray-300 text-center mt-20 animate-pulse">
-            Loading your friends...
+        {/* 🤖 AI CARD */}
+        <div
+          onClick={() => selectChat(AI_USER)}
+          className={`p-4 mb-4 rounded-xl cursor-pointer flex items-center gap-3
+            ${
+              selectedChat?._id === AI_USER._id
+                ? "bg-purple-500/30"
+                : "bg-purple-500/20 hover:bg-purple-500/30"
+            }`}
+        >
+          <Bot />
+          <div className="flex-1">
+            <p className="font-bold">ChatVerse AI</p>
+            <p className="text-sm opacity-80">Ask me anything ✨</p>
           </div>
-        ) : friends.length > 0 ? (
-          friends.map((f) => (
-            <motion.div
-              key={f._id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`p-4 mb-3 rounded-lg flex justify-between items-center cursor-pointer transition-all ${
-                selectedFriend?._id === f._id
-                  ? "bg-white/30 shadow-lg"
-                  : "bg-white/10 hover:bg-white/20"
-              }`}
-              onClick={() => handleSelectFriend(f)}
-            >
-              <div className="flex items-center gap-3">
-                {/* 🟢 Online Status */}
-                <Circle
-                  size={10}
-                  className={`${
-                    isOnline(f._id)
-                      ? "text-green-400 fill-green-400"
-                      : "text-gray-400"
-                  }`}
-                />
-                <div>
-                  <p className="font-semibold text-lg">@{f.username}</p>
-                  <p className="text-gray-300 text-sm truncate w-44 sm:w-60">
-                    {f.email}
-                  </p>
-                </div>
-              </div>
+          {unread[AI_USER._id] && (
+            <span className="w-3 h-3 bg-red-500 rounded-full" />
+          )}
+        </div>
 
-              {/* Message Icon */}
-              <div className="relative">
-                <MessageCircle
-                  className="text-yellow-400 hover:scale-110 transition-transform"
-                  size={20}
-                />
-                {unreadMessages[f._id] && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full"></span>
-                )}
-              </div>
-            </motion.div>
-          ))
-        ) : (
-          <p className="text-gray-300 mt-10 text-center">
-            No accepted friends yet — accept a request from your mailbox ✨
-          </p>
-        )}
+        {/* FRIENDS */}
+        {friends.map((f) => (
+          <div
+            key={f._id}
+            onClick={() => selectChat(f)}
+            className="p-4 mb-2 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer flex justify-between"
+          >
+            @{f.username}
+            {unread[f._id] && (
+              <span className="w-3 h-3 bg-red-500 rounded-full" />
+            )}
+          </div>
+        ))}
       </motion.div>
 
-      {/* Chat Panel */}
+      {/* CHAT PANEL */}
       <AnimatePresence>
-        {selectedFriend && (
-          <motion.div
-            key="chat-panel"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.4 }}
-            className="flex-1 bg-gradient-to-br from-purple-800 via-indigo-700 to-blue-700 flex flex-col"
-          >
-            <ChatPanel friend={selectedFriend} />
+        {selectedChat && (
+          <motion.div className="flex-1">
+            <ChatPanel
+              friend={selectedChat}
+              socket={socketRef.current}
+            />
           </motion.div>
         )}
       </AnimatePresence>
