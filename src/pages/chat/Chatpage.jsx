@@ -6,12 +6,15 @@ import { io } from "socket.io-client";
 import api from "../../Services/api";
 import ChatPanel from "./ChatPanel";
 
-/* 🤖 AI USER (frontend only) */
+/* 🤖 AI USER */
 const AI_USER = {
   _id: "CHATVERSE_AI",
   username: "ChatVerse AI",
   isAI: true,
 };
+
+const BACKEND_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function ChatPage() {
   const { user } = useContext(AuthContext);
@@ -21,11 +24,11 @@ export default function ChatPage() {
   const [unread, setUnread] = useState({});
   const socketRef = useRef(null);
 
-  /* ================= SOCKET (ONE TIME) ================= */
+  /* ================= SOCKET ================= */
   useEffect(() => {
     if (!user?._id) return;
 
-    const socket = io("http://localhost:5000", {
+    const socket = io(BACKEND_URL, {
       transports: ["websocket"],
     });
 
@@ -47,7 +50,7 @@ export default function ChatPage() {
     return () => socket.disconnect();
   }, [user?._id, selectedChat]);
 
-  /* ================= FRIEND LIST ================= */
+  /* ================= FRIENDS ================= */
   const fetchFriends = useCallback(async () => {
     const res = await api.get("/api/friends/list");
     setFriends(res.data || []);
@@ -63,62 +66,92 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-screen flex bg-gradient-to-br from-indigo-600 via-purple-700 to-blue-700 text-white">
+    <div className="h-screen flex bg-gradient-to-br from-indigo-700 via-purple-700 to-blue-700 text-white">
 
-      {/* SIDEBAR */}
+      {/* ===== SIDEBAR ===== */}
       <motion.div
-        animate={{ width: selectedChat ? "30%" : "100%" }}
-        className="p-4 border-r border-white/10 overflow-y-auto"
+        animate={{
+          width: selectedChat ? "100%" : "100%",
+        }}
+        className={`
+          ${selectedChat ? "hidden md:block md:w-1/3" : "w-full md:w-1/3"}
+          p-4 border-r border-white/10 overflow-y-auto
+        `}
       >
-        <div className="flex items-center justify-between mb-4">
-          {selectedChat ? (
-            <ArrowLeft onClick={() => setSelectedChat(null)} />
-          ) : (
-            <span />
-          )}
-          <h2 className="font-bold text-xl">Your Chats</h2>
-          <Bell />
+        {/* HEADER */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-bold text-xl">Chats</h2>
+          <Bell className="opacity-80" />
         </div>
 
-        {/* 🤖 AI CARD */}
+        {/* AI CARD */}
         <div
           onClick={() => selectChat(AI_USER)}
-          className={`p-4 mb-4 rounded-xl cursor-pointer flex items-center gap-3
+          className={`
+            p-4 mb-4 rounded-xl cursor-pointer flex items-center gap-3
+            transition hover:scale-[1.02]
             ${
               selectedChat?._id === AI_USER._id
-                ? "bg-purple-500/30"
-                : "bg-purple-500/20 hover:bg-purple-500/30"
-            }`}
+                ? "bg-purple-500/40"
+                : "bg-white/10 hover:bg-white/20"
+            }
+          `}
         >
           <Bot />
           <div className="flex-1">
-            <p className="font-bold">ChatVerse AI</p>
-            <p className="text-sm opacity-80">Ask me anything ✨</p>
+            <p className="font-semibold">ChatVerse AI</p>
+            <p className="text-sm opacity-70">Ask me anything ✨</p>
           </div>
+
           {unread[AI_USER._id] && (
-            <span className="w-3 h-3 bg-red-500 rounded-full" />
+            <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
           )}
         </div>
 
-        {/* FRIENDS */}
+        {/* FRIEND LIST */}
         {friends.map((f) => (
           <div
             key={f._id}
             onClick={() => selectChat(f)}
-            className="p-4 mb-2 rounded-lg bg-white/10 hover:bg-white/20 cursor-pointer flex justify-between"
+            className={`
+              p-4 mb-2 rounded-xl cursor-pointer flex justify-between items-center
+              transition hover:scale-[1.02]
+              ${
+                selectedChat?._id === f._id
+                  ? "bg-white/25"
+                  : "bg-white/10 hover:bg-white/20"
+              }
+            `}
           >
-            @{f.username}
+            <span>@{f.username}</span>
+
             {unread[f._id] && (
-              <span className="w-3 h-3 bg-red-500 rounded-full" />
+              <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
             )}
           </div>
         ))}
       </motion.div>
 
-      {/* CHAT PANEL */}
+      {/* ===== CHAT PANEL ===== */}
       <AnimatePresence>
         {selectedChat && (
-          <motion.div className="flex-1">
+          <motion.div
+            initial={{ x: 200, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 200, opacity: 0 }}
+            className="w-full md:flex-1"
+          >
+            {/* MOBILE BACK BUTTON */}
+            <div className="md:hidden p-3 flex items-center gap-3 bg-black/20">
+              <ArrowLeft
+                className="cursor-pointer"
+                onClick={() => setSelectedChat(null)}
+              />
+              <span className="font-semibold">
+                {selectedChat.username}
+              </span>
+            </div>
+
             <ChatPanel
               friend={selectedChat}
               socket={socketRef.current}
